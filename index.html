@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Move To Islam - Ultra Pro</title>
+
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b3d2e">
+
+<style>
+:root{
+--primary:#0b3d2e;
+--accent:#D4AF37;
+--bg:#020811;
+--card:rgba(255,255,255,0.05);
+--text:#fff;
+}
+[data-theme="light"]{
+--bg:#f0f4f0;
+--text:#0b3d2e;
+--card:rgba(0,0,0,0.05);
+--primary:#1a5d4a;
+}
+body{margin:0;font-family:'Poppins','Hind Siliguri',sans-serif;background:var(--bg);color:var(--text);transition:.3s;}
+.app-bar{position:fixed;top:0;width:100%;background:var(--primary);padding:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--accent);z-index:1000;}
+.container{position:absolute;top:75px;bottom:85px;width:100%;overflow-y:auto;padding:15px;}
+.card{background:var(--card);border:1px solid var(--accent);border-radius:20px;padding:20px;margin-bottom:15px;}
+.time-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.time-box{background:rgba(212,175,55,0.1);padding:15px;border-radius:15px;text-align:center;border:1px solid var(--accent);}
+.time-box b{display:block;font-size:22px;color:var(--accent);}
+.bottom-nav{position:fixed;bottom:15px;left:15px;right:15px;background:var(--primary);border-radius:25px;display:flex;justify-content:space-around;padding:15px;border:1px solid var(--accent);}
+.nav-btn{color:#fff;cursor:pointer;text-align:center;}
+.nav-btn.active{color:var(--accent);font-weight:bold;}
+.page{display:none;}
+.page.active{display:block;}
+#tasbih-count{font-size:48px;color:var(--accent);margin:15px 0;text-align:center;}
+button{background:var(--accent);border:none;padding:10px 18px;border-radius:12px;font-weight:bold;cursor:pointer;}
+.profile-img{width:60px;border-radius:50%;border:2px solid var(--accent);}
+</style>
+</head>
+
+<body data-theme="dark">
+
+<div class="app-bar">
+<i class="fa-solid fa-circle-half-stroke" onclick="toggleTheme()"></i>
+<div>Move To Islam</div>
+<i class="fa-solid fa-location-dot" onclick="getLocation()"></i>
+</div>
+
+<div class="container">
+
+<!-- HOME -->
+<div id="home" class="page active">
+<div class="card" style="text-align:center">
+<img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-img">
+<p id="city">Detecting...</p>
+<h1 id="clock" style="color:var(--accent)">00:00:00</h1>
+<p id="date"></p>
+</div>
+
+<div class="card">
+<h3 id="ramadan-title">Checking Ramadan...</h3>
+<p id="ramadan-countdown"></p>
+</div>
+
+<div class="time-grid">
+<div class="time-box">সাহরির শেষ<b id="sehri">--</b></div>
+<div class="time-box">ইফতার<b id="iftar">--</b></div>
+</div>
+
+<h3>নামাজের সময়সূচী</h3>
+<div id="prayers"></div>
+</div>
+
+<!-- QURAN -->
+<div id="quran" class="page">
+<div id="surah-list"></div>
+</div>
+
+<!-- TASBIH -->
+<div id="tasbih" class="page">
+<div class="card">
+<h3 style="text-align:center">Digital Tasbih</h3>
+<div id="tasbih-count">0</div>
+<div style="text-align:center">
+<button onclick="incrementTasbih()">TAP</button>
+<button onclick="resetTasbih()">Reset</button>
+</div>
+</div>
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="page">
+<div class="card" style="text-align:center">
+<img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-img">
+<h3>User Name</h3>
+<p>Email: example@mail.com</p>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="page">
+<div class="card">
+<h3>Settings</h3>
+<button onclick="toggleTheme()">Switch Theme</button>
+</div>
+</div>
+
+</div>
+
+<div class="bottom-nav">
+<div class="nav-btn active" onclick="nav('home',this)">Home</div>
+<div class="nav-btn" onclick="nav('quran',this);loadSurahs()">Quran</div>
+<div class="nav-btn" onclick="nav('tasbih',this)">Tasbih</div>
+<div class="nav-btn" onclick="nav('profile',this)">Profile</div>
+<div class="nav-btn" onclick="nav('settings',this)">Settings</div>
+</div>
+
+<script>
+// Global Variables
+let sehriTime="05:00";
+let sehriAlertShown=false;
+let tasbihCount=localStorage.getItem("tasbih")||0;
+document.getElementById("tasbih-count").innerText=tasbihCount;
+
+// NAVIGATION
+function nav(id,el){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+el.classList.add("active");
+}
+
+// THEME
+function toggleTheme(){
+let t=document.body.getAttribute("data-theme");
+document.body.setAttribute("data-theme",t==="dark"?"light":"dark");
+}
+
+// CLOCK
+setInterval(()=>{
+document.getElementById("clock").innerText=new Date().toLocaleTimeString("en-GB");
+},1000);
+
+// DATE
+document.getElementById("date").innerText=
+new Date().toLocaleDateString("bn-BD",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+// LOCATION + PRAYER
+async function getLocation(){
+navigator.geolocation.getCurrentPosition(async(pos)=>{
+let lat=pos.coords.latitude;
+let lon=pos.coords.longitude;
+
+let res=await fetch(`https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=2`);
+let data=await res.json();
+updatePrayer(data.data);
+
+let cityRes=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+let cityData=await cityRes.json();
+let addr=cityData.address;
+document.getElementById("city").innerText=addr.city||addr.town||addr.village||addr.state||"Bangladesh";
+
+},()=>alert("Location Permission Denied"));
+}
+
+function updatePrayer(data){
+let t=data.timings;
+document.getElementById("sehri").innerText=t.Imsak;
+document.getElementById("iftar").innerText=t.Maghrib;
+sehriTime=t.Imsak;
+sehriAlertShown=false;
+
+let list=[
+["ফজর",t.Fajr],
+["যোহর",t.Dhuhr],
+["আসর",t.Asr],
+["মাগরিব",t.Maghrib],
+["এশা",t.Isha]
+];
+
+document.getElementById("prayers").innerHTML=
+list.map(p=>`<div class="card" style="display:flex;justify-content:space-between"><b>${p[0]}</b><span>${p[1]}</span></div>`).join("");
+}
+
+// SEHRI ALERT
+setInterval(()=>{
+let now=new Date();
+let [h,m]=sehriTime.split(":");
+let alertTime=new Date();
+alertTime.setHours(h); alertTime.setMinutes(m-10); alertTime.setSeconds(0);
+if(!sehriAlertShown && now.getHours()==alertTime.getHours() && now.getMinutes()==alertTime.getMinutes() && now.getSeconds()==0){
+sehriAlertShown=true;
+Swal.fire("সেহরির সময় শেষ হচ্ছে!","আর ১০ মিনিট বাকি","warning");
+showNotification("Sehri Alert","10 minutes left for Sehri");
+}
+},1000);
+
+// TASBIH
+function incrementTasbih(){ tasbihCount++; localStorage.setItem("tasbih",tasbihCount); document.getElementById("tasbih-count").innerText=tasbihCount;}
+function resetTasbih(){ tasbihCount=0; localStorage.setItem("tasbih",0); document.getElementById("tasbih-count").innerText=0;}
+
+// RAMADAN
+async function checkRamadan(){
+let res=await fetch("https://api.aladhan.com/v1/gToH");
+let data=await res.json();
+let month=data.data.hijri.month.en;
+if(month==="Ramadan"){ document.getElementById("ramadan-title").innerText="🌙 Ramadan Mubarak";}
+else{
+document.getElementById("ramadan-title").innerText="Ramadan Countdown";
+let today=new Date(); let next=new Date(today.getFullYear()+1,2,1);
+let diff=Math.floor((next-today)/(1000*60*60*24));
+document.getElementById("ramadan-countdown").innerText=diff+" days remaining";}
+}
+checkRamadan();
+
+// QURAN
+async function loadSurahs(){
+let list=document.getElementById("surah-list");
+list.innerHTML="Loading...";
+let res=await fetch("https://api.alquran.cloud/v1/surah");
+let data=await res.json();
+list.innerHTML=data.data.map(s=>`<div class="card" onclick="playAudio(${s.number},'${s.englishName}')" style="display:flex;justify-content:space-between;cursor:pointer"><b>${s.number}. ${s.englishName}</b><span style="color:var(--accent)">${s.name}</span></div>`).join("");
+}
+function playAudio(id,name){let audio=new Audio(`https://download.quranicaudio.com/qdc/mishari_rashid_al_afasy/murattal/${id}.mp3`); audio.play(); Swal.fire(name,"Playing Audio");}
+
+// NOTIFICATIONS
+if("Notification" in window){ Notification.requestPermission(); }
+function showNotification(title,body){ if(Notification.permission==="granted"){ new Notification(title,{body}); }}
+
+// AUTO LOAD
+window.onload=()=>{getLocation();};
+
+// SERVICE WORKER
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(()=>console.log("SW Registered")).catch(err=>console.log(err)); }
+</script>
+
+</body>
+  </html>
